@@ -55,8 +55,6 @@ function AWSLambdaStatusCodeHandler:access(conf)
       upstream_body.request_uri_args = ngx_req_get_uri_args()
     end
 
-    ngx.log(ngx.ERR, "Hello!")
-
     if conf.forward_request_body then
       ngx_req_read_body()
 
@@ -79,8 +77,6 @@ function AWSLambdaStatusCodeHandler:access(conf)
     local body_args = public_utils.get_body_args()
     upstream_body = utils.table_merge(ngx_req_get_uri_args(), body_args)
   end
-
-  ngx.log(ngx.ERR, "Hello!")
 
   local upstream_body_json, err = cjson.encode(upstream_body)
   if not upstream_body_json then
@@ -127,8 +123,6 @@ function AWSLambdaStatusCodeHandler:access(conf)
     return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
   end
 
-  print("hello, from Plugin")
-
   local res, err = client:request {
     method = "POST",
     path = request.url,
@@ -158,7 +152,7 @@ function AWSLambdaStatusCodeHandler:access(conf)
     local content_type = headers["Content-Type"]
     if content_type:find("application/json", nil, true) then
       params, err = cjson.decode(body)
-      local statusCode = params.statusCode
+      local statusCode = params.status
       local resource   = params.resource
       local lambdaHeaders = params.headers
       if statusCode ~= nil then
@@ -170,12 +164,15 @@ function AWSLambdaStatusCodeHandler:access(conf)
         headers['Content-Length'] = nil
         body = cjson.encode(resource)
       end
+
+      --Set headers returned in JSON body
+      if lambdaHeaders ~= nil then
+        for k,v in pairs(lambdaHeaders) do
+          headers[k] = v
+        end
+      end
     end
   end
-
-  --Set headers returned in JSON body
-  for k,v in pairs(lambdaHeaders) do
-    ngx.header[k] = v
 
   for k, v in pairs(headers) do
     ngx.header[k] = v
