@@ -152,7 +152,7 @@ function AWSLambdaStatusCodeHandler:access(conf)
     local content_type = headers["Content-Type"]
     if content_type:find("application/json", nil, true) then
       params, err = cjson.decode(body)
-      local statusCode = params.statusCode
+      local statusCode = params.status
       local resource   = params.resource
       local lambdaHeaders = params.headers
       if statusCode ~= nil then
@@ -164,9 +164,10 @@ function AWSLambdaStatusCodeHandler:access(conf)
         headers['Content-Length'] = nil
         body = cjson.encode(resource)
       end
-
+      
       --Set headers returned in JSON body
-      if lambdaHeaders ~= nil then
+      if type(lambdaHeaders) == type({}) then
+
         for k,v in pairs(lambdaHeaders) do
           headers[k] = v
         end
