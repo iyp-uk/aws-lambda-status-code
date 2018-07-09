@@ -154,6 +154,7 @@ function AWSLambdaStatusCodeHandler:access(conf)
       params, err = cjson.decode(body)
       local statusCode = params.statusCode
       local resource   = params.resource
+      local lambdaHeaders = params.headers
       if statusCode ~= nil then
         ngx.header['X-lambda-original-status'] = res.status
         ngx.status = statusCode
@@ -163,14 +164,22 @@ function AWSLambdaStatusCodeHandler:access(conf)
         headers['Content-Length'] = nil
         body = cjson.encode(resource)
       end
+      
+      --Set headers returned in JSON body
+      if type(lambdaHeaders) == type({}) then
+
+        for k,v in pairs(lambdaHeaders) do
+          headers[k] = v
+        end
+      end
     end
   end
 
-  -- Send response to client
   for k, v in pairs(headers) do
     ngx.header[k] = v
   end
 
+  -- Send response to client
   ngx.say(body)
 
   return ngx.exit(res.status)
